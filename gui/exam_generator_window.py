@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from database.database_manager import DatabaseManager
+from gui.user_management_window import UserManagementWindow
+from gui.password_window import ChangePasswordWindow
+from gui.question_management_window import QuestionManagementWindow
 import random
 
 class ExamGeneratorWindow:
@@ -29,6 +32,21 @@ class ExamGeneratorWindow:
         user_info = self.auth_manager.get_current_user()
         ttk.Label(header_frame, text=f"Chào mừng: {user_info['full_name']}", 
                  font=("Arial", 12, "bold")).pack(side=tk.LEFT)
+        
+        # Menu cho admin và giáo viên
+        if self.auth_manager.is_admin() or self.auth_manager.has_role('question_creator'):
+            admin_frame = ttk.Frame(header_frame)
+            admin_frame.pack(side=tk.RIGHT, padx=(0, 10))
+            
+            ttk.Button(admin_frame, text="Quản lý Câu hỏi", 
+                      command=self.show_question_management).pack(side=tk.LEFT, padx=(0, 5))
+            
+            if self.auth_manager.is_admin():
+                ttk.Button(admin_frame, text="Quản lý User", 
+                          command=self.show_user_management).pack(side=tk.LEFT, padx=(0, 5))
+            
+            ttk.Button(admin_frame, text="Đổi mật khẩu", 
+                      command=self.show_change_password).pack(side=tk.LEFT, padx=(0, 5))
         
         ttk.Button(header_frame, text="Đăng xuất", 
                   command=self.logout).pack(side=tk.RIGHT)
@@ -372,6 +390,18 @@ class ExamGeneratorWindow:
                 
             except Exception as e:
                 messagebox.showerror("Lỗi", f"Không thể xóa đề thi: {str(e)}")
+    
+    def show_user_management(self):
+        """Hiển thị cửa sổ quản lý user"""
+        UserManagementWindow(self.window, self.auth_manager)
+    
+    def show_question_management(self):
+        """Hiển thị cửa sổ quản lý câu hỏi"""
+        QuestionManagementWindow(self.window, self.auth_manager)
+    
+    def show_change_password(self):
+        """Hiển thị cửa sổ đổi mật khẩu"""
+        ChangePasswordWindow(self.window, self.auth_manager)
     
     def logout(self):
         """Đăng xuất"""

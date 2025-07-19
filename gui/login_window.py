@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from utils.auth import AuthManager
+from gui.password_window import ForgotPasswordWindow
 
 class LoginWindow:
     def __init__(self, parent):
@@ -46,14 +47,23 @@ class LoginWindow:
         ttk.Label(main_frame, text="Vai trò:").grid(row=3, column=0, sticky="w", pady=5)
         self.role_var = tk.StringVar(value="student")
         role_combo = ttk.Combobox(main_frame, textvariable=self.role_var, 
-                                 values=["student", "question_creator", "exam_generator"],
+                                 values=["student", "question_creator", "exam_generator", "admin"],
                                  state="readonly", width=27)
         role_combo.grid(row=3, column=1, pady=5, padx=(10, 0))
         
+        # Frame nút bấm
+        button_frame = ttk.Frame(main_frame)
+        button_frame.grid(row=4, column=0, columnspan=2, pady=20)
+        
         # Nút đăng nhập
-        login_button = ttk.Button(main_frame, text="Đăng nhập", 
+        login_button = ttk.Button(button_frame, text="Đăng nhập", 
                                  command=self.login, style="Accent.TButton")
-        login_button.grid(row=4, column=0, columnspan=2, pady=20)
+        login_button.grid(row=0, column=0, padx=(0, 10))
+        
+        # Nút quên mật khẩu
+        forgot_button = ttk.Button(button_frame, text="Quên mật khẩu", 
+                                  command=self.show_forgot_password)
+        forgot_button.grid(row=0, column=1)
         
         # Thông tin tài khoản mẫu
         info_frame = ttk.LabelFrame(main_frame, text="Tài khoản mẫu", padding="10")
@@ -77,7 +87,7 @@ class LoginWindow:
     def login(self):
         """Xử lý đăng nhập"""
         username = self.username_var.get().strip()
-        password = self.password_var.get().strip()
+        password = self.password_var.get().strip()         
         role = self.role_var.get()
         
         if not username or not password:
@@ -99,6 +109,10 @@ class LoginWindow:
         else:
             messagebox.showerror("Lỗi", message)
     
+    def show_forgot_password(self):
+        """Hiển thị cửa sổ quên mật khẩu"""
+        ForgotPasswordWindow(self.login_window, self.auth_manager)
+    
     def open_main_window(self, role):
         """Mở cửa sổ chính theo vai trò"""
         if role == "student":
@@ -107,6 +121,6 @@ class LoginWindow:
         elif role == "question_creator":
             from gui.question_creator_window import QuestionCreatorWindow
             QuestionCreatorWindow(self.parent, self.auth_manager)
-        elif role == "exam_generator":
+        elif role == "exam_generator" or role == "admin":
             from gui.exam_generator_window import ExamGeneratorWindow
             ExamGeneratorWindow(self.parent, self.auth_manager) 

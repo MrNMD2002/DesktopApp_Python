@@ -1,9 +1,12 @@
+-- Setup Database cho Hệ thống Quản lý Đề thi
+-- Chạy file này trong MySQL để tạo database và bảng
+
 -- Tạo database
 CREATE DATABASE IF NOT EXISTS exam_bank;
 USE exam_bank;
 
 -- Bảng người dùng
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -19,7 +22,7 @@ CREATE TABLE users (
 );
 
 -- Bảng môn học
-CREATE TABLE subjects (
+CREATE TABLE IF NOT EXISTS subjects (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     code VARCHAR(20) UNIQUE NOT NULL,
@@ -27,7 +30,7 @@ CREATE TABLE subjects (
 );
 
 -- Bảng câu hỏi
-CREATE TABLE questions (
+CREATE TABLE IF NOT EXISTS questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     subject_id INT NOT NULL,
     question_text TEXT NOT NULL,
@@ -48,7 +51,7 @@ CREATE TABLE questions (
 );
 
 -- Bảng lịch sử chỉnh sửa câu hỏi
-CREATE TABLE question_history (
+CREATE TABLE IF NOT EXISTS question_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     question_id INT NOT NULL,
     action ENUM('created', 'updated', 'deleted', 'restored') NOT NULL,
@@ -61,12 +64,12 @@ CREATE TABLE question_history (
 );
 
 -- Bảng đề thi
-CREATE TABLE exams (
+CREATE TABLE IF NOT EXISTS exams (
     id INT AUTO_INCREMENT PRIMARY KEY,
     exam_code VARCHAR(20) UNIQUE NOT NULL,
     subject_id INT NOT NULL,
     title VARCHAR(200) NOT NULL,
-    duration INT NOT NULL, -- thời gian làm bài (phút)
+    duration INT NOT NULL,
     total_questions INT NOT NULL,
     created_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -75,7 +78,7 @@ CREATE TABLE exams (
 );
 
 -- Bảng chi tiết đề thi (câu hỏi trong đề)
-CREATE TABLE exam_questions (
+CREATE TABLE IF NOT EXISTS exam_questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     exam_id INT NOT NULL,
     question_id INT NOT NULL,
@@ -85,7 +88,7 @@ CREATE TABLE exam_questions (
 );
 
 -- Bảng bài thi của học sinh
-CREATE TABLE student_exams (
+CREATE TABLE IF NOT EXISTS student_exams (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     exam_id INT NOT NULL,
@@ -98,7 +101,7 @@ CREATE TABLE student_exams (
 );
 
 -- Bảng câu trả lời của học sinh
-CREATE TABLE student_answers (
+CREATE TABLE IF NOT EXISTS student_answers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_exam_id INT NOT NULL,
     question_id INT NOT NULL,
@@ -113,14 +116,18 @@ INSERT INTO subjects (name, code, description) VALUES
 ('Toán học', 'MATH', 'Môn học về toán học cơ bản'),
 ('Vật lý', 'PHYSICS', 'Môn học về vật lý'),
 ('Hóa học', 'CHEMISTRY', 'Môn học về hóa học'),
-('Tiếng Anh', 'ENGLISH', 'Môn học về tiếng Anh');
+('Tiếng Anh', 'ENGLISH', 'Môn học về tiếng Anh')
+ON DUPLICATE KEY UPDATE name=name;
 
 -- Thêm tài khoản mẫu (password: 123456)
+-- Hash được tạo bằng bcrypt cho mật khẩu "123456"
 INSERT INTO users (username, password_hash, full_name, email, role, is_active) VALUES
 ('admin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.iQeO', 'Administrator', 'admin@example.com', 'admin', TRUE),
 ('creator1', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.iQeO', 'Người tạo câu hỏi 1', 'creator1@example.com', 'question_creator', TRUE),
-('student1', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.iQeO', 'Học sinh 1', 'student1@example.com', 'student', TRUE);
+('student1', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.iQeO', 'Học sinh 1', 'student1@example.com', 'student', TRUE)
+ON DUPLICATE KEY UPDATE username=username;
 
-UPDATE users SET password_hash='$2a$12$RbGKGC29iJ8tE.EhYb5EYOzRH/A7YiV4Q6uP3YC0jKI0mQXG/jktG' WHERE username='admin';
-
-SELECT DATABASE(); 
+-- Hiển thị thông tin
+SELECT 'Database setup completed!' as status;
+SELECT COUNT(*) as user_count FROM users;
+SELECT COUNT(*) as subject_count FROM subjects; 

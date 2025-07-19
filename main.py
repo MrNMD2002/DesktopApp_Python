@@ -95,16 +95,6 @@ class ExamBankApp:
         info_frame = ttk.LabelFrame(main_frame, text="Tài khoản mẫu", padding="10")
         info_frame.grid(row=4, column=0, pady=(20, 0), sticky="ew")
         
-        info_text = """
-        Tài khoản mẫu (mật khẩu: 123456):
-        • student1 - Học sinh
-        • creator1 - Người làm đề  
-        • admin - Người sinh đề
-        """
-        
-        info_label = ttk.Label(info_frame, text=info_text, 
-                              font=("Arial", 9), justify="left")
-        info_label.grid(row=0, column=0)
     
     def show_login(self):
         """Hiển thị cửa sổ đăng nhập"""
@@ -121,6 +111,7 @@ class ExamBankApp:
             messagebox.showerror("Lỗi", f"Lỗi chạy ứng dụng: {str(e)}")
 
     def verify_password(self, password, hashed):
+        """Xác thực mật khẩu - xử lý cả string và bytes"""
         if isinstance(hashed, str):
             hashed = hashed.encode('utf-8')
         return bcrypt.checkpw(password.encode('utf-8'), hashed)
