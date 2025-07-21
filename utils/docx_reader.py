@@ -7,93 +7,40 @@ import os
 
 class DocxReader:
     def __init__(self):
+        """
+        Khởi tạo DocxReader và tạo thư mục 'pictures' nếu chưa tồn tại.
+        """
         self.db = DatabaseManager()
+        self.pictures_dir = "pictures"
+        if not os.path.exists(self.pictures_dir):
+            os.makedirs(self.pictures_dir)
+            logging.info(f"Đã tạo thư mục lưu trữ hình ảnh: {self.pictures_dir}")
 
-    # =================================================================
-    # CÁC HÀM XỬ LÝ HÌNH ẢNH VÀ HÀM TEST KHÔNG THAY ĐỔI
-    # =================================================================
-    def extract_images_from_docx(self, file_path):
-        """Trích xuất hình ảnh từ file .docx"""
-        # Giữ nguyên logic này, nó vẫn có thể hoạt động cho các ảnh được neo trong văn bản
+    def extract_images_from_docx(self, doc):
+        """
+        Trích xuất tất cả các hình ảnh từ một đối tượng tài liệu docx.
+        """
         try:
-            doc = Document(file_path)
             images = []
-            # ... (Nội dung hàm này được giữ nguyên như cũ) ...
+            # Duyệt qua các mối quan hệ của tài liệu để tìm hình ảnh
             for rel in doc.part.rels.values():
                 if "image" in rel.target_ref:
                     image_data = rel.target_part.blob
                     image_name = os.path.basename(rel.target_ref)
-                    images.append({'name': image_name, 'data': image_data,
-                                   'paragraph_index': -1})  # paragraph_index không còn quá quan trọng
-            logging.info(f"Trích xuất được {len(images)} hình ảnh từ file")
+                    images.append({'name': image_name, 'data': image_data})
+            logging.info(f"Trích xuất được {len(images)} hình ảnh từ file.")
             return images
         except Exception as e:
-            logging.error(f"Lỗi trích xuất hình ảnh: {e}")
+            logging.error(f"Lỗi trong quá trình trích xuất hình ảnh: {e}")
             return []
 
-    def save_images_to_folder(self, images, output_folder="extracted_images"):
-        """Lưu hình ảnh vào thư mục"""
-        # Giữ nguyên hàm này
-        try:
-            if not os.path.exists(output_folder):
-                os.makedirs(output_folder)
-            saved_images = []
-            for i, image in enumerate(images):
-                # Đảm bảo tên file là duy nhất nếu cần
-                file_path = os.path.join(output_folder, image['name'])
-                with open(file_path, 'wb') as f:
-                    f.write(image['data'])
-                saved_images.append({
-                    'original_name': image['name'],
-                    'file_path': file_path,
-                    'paragraph_index': image['paragraph_index']
-                })
-                logging.info(f"Đã lưu hình ảnh: {file_path}")
-            return saved_images
-        except Exception as e:
-            logging.error(f"Lỗi lưu hình ảnh: {e}")
-            return []
-
-    def extract_image_references_from_text(self, text):
-        """Trích xuất tham chiếu hình ảnh từ text"""
-        # Giữ nguyên hàm này
-        pattern = r'\[file:([^\]]+)\]'
-        matches = re.findall(pattern, text)
-        return matches
-
-    def process_text_with_images(self, text, images_info):
-        """Xử lý text có chứa tham chiếu hình ảnh"""
-        # Giữ nguyên hàm này
-        image_refs = self.extract_image_references_from_text(text)
-        processed_text = text
-        for i, ref in enumerate(image_refs):
-            image_info = None
-            for img in images_info:
-                # So sánh tên file gốc được trích xuất
-                if os.path.basename(img.get('original_name', '')) == ref:
-                    image_info = img
-                    break
-            if image_info:
-                replacement = f"[IMAGE: {image_info['file_path']}]"
-                processed_text = processed_text.replace(f"[file:{ref}]", replacement)
-            else:
-                logging.warning(f"Không tìm thấy hình ảnh cho tham chiếu: {ref}")
-        return processed_text
-
-    def test_file_detailed(self, file_path):
-        """Test file chi tiết - hiển thị từng dòng và lý do không nhận diện"""
-        # LƯU Ý: Hàm này được thiết kế cho định dạng văn bản,
-        # cần được viết lại hoàn toàn để hoạt động với định dạng bảng.
-        # Tạm thời trả về thông báo.
-        return False, "Chức năng test chi tiết chưa được cập nhật cho định dạng bảng."
-
-    # =================================================================
-    # PHẦN LOGIC ĐỌC FILE ĐÃ ĐƯỢC CẬP NHẬT HOÀN TOÀN
-    # =================================================================
     def read_docx_file(self, file_path, subject_id, creator_id):
         """
-        Đọc file .docx và trích xuất câu hỏi từ các BẢNG (TABLES).
-        Mỗi câu hỏi được giả định nằm trong một bảng riêng biệt.
+        Đọc file .docx và trích xuất câu hỏi.
+        Hàm này thực hiện theo quy trình 2 bước:
+        1. Phân tích toàn bộ file để lấy danh sách câu hỏi.
+        2. Kiểm tra sự khớp lệ giữa số lượng tag hình ảnh và số lượng hình ảnh thực tế.
+        3. Nếu hợp lệ, tiến hành lưu vào cơ sở dữ liệu.
         """
         try:
             if not os.path.exists(file_path) or not file_path.lower().endswith('.docx'):
@@ -102,44 +49,34 @@ class DocxReader:
 
             logging.info(f"Bắt đầu đọc file theo định dạng BẢNG: {file_path}")
             doc = Document(file_path)
-            questions = []
 
-            # Trích xuất và lưu tất cả hình ảnh trong file một lần
-            images = self.extract_images_from_docx(file_path)
-            saved_images = self.save_images_to_folder(images)
-            logging.info(f"Đã trích xuất và lưu {len(saved_images)} hình ảnh")
+            all_images_in_doc = self.extract_images_from_docx(doc)
+            parsed_questions = []
 
-            # Duyệt qua từng bảng trong tài liệu
+            # --- BƯỚC 1: PHÂN TÍCH FILE VÀ TẠO DANH SÁCH CÂU HỎI ---
             for i, table in enumerate(doc.tables):
                 current_question = self._create_empty_question()
                 is_valid_question_block = False
 
-                # Duyệt qua từng hàng trong bảng
                 for row in table.rows:
-                    # Đảm bảo hàng có đủ 2 cột
                     if len(row.cells) < 2:
                         continue
-
                     label = row.cells[0].text.strip()
                     value = row.cells[1].text.strip()
-
-                    # Nếu ô label trống thì bỏ qua
                     if not label:
                         continue
 
-                    # Bắt đầu một khối câu hỏi khi gặp 'QN=...'
                     if self._is_question_start(label):
                         is_valid_question_block = True
                         current_question['question_number'] = self._extract_question_number(label)
-                        # Xử lý tham chiếu hình ảnh ngay tại đây
-                        current_question['question_text'] = self.process_text_with_images(value, saved_images)
-
-                    # Chỉ xử lý các dòng khác nếu đã ở trong một khối câu hỏi
+                        if '[file:' in value:
+                            current_question['has_image'] = True
+                            current_question['question_text'] = re.sub(r'\[file:[^\]]+\]', '', value).strip()
+                        else:
+                            current_question['question_text'] = value
                     elif is_valid_question_block:
                         if self._is_option(label):
-                            option_letter = label.replace('.', '').strip().upper()
-                            current_question['options'][option_letter] = self.process_text_with_images(value,
-                                                                                                       saved_images)
+                            current_question['options'][label.replace('.', '').strip().upper()] = value
                         elif self._is_correct_answer(label):
                             current_question['correct_answer'] = value.strip().upper()
                         elif self._is_mark_info(label):
@@ -149,118 +86,62 @@ class DocxReader:
                         elif self._is_mix_choices_info(label):
                             current_question['mix_choices'] = self._extract_mix_choices(value)
 
-                # Sau khi duyệt xong một bảng, kiểm tra và thêm câu hỏi nếu hợp lệ
                 if is_valid_question_block and self._is_valid_question(current_question):
-                    questions.append(current_question)
-                    logging.info(
-                        f"Đã phân tích thành công câu hỏi từ bảng {i + 1} (QN={current_question.get('question_number')})")
+                    parsed_questions.append(current_question)
                 elif is_valid_question_block:
                     logging.warning(
                         f"Bỏ qua câu hỏi không hợp lệ từ bảng {i + 1} (QN={current_question.get('question_number')})")
 
-            logging.info(f"Tổng số câu hỏi hợp lệ đã phân tích được: {len(questions)}")
-            if not questions:
+            if not parsed_questions:
                 return False, "Không tìm thấy câu hỏi hợp lệ nào trong các bảng của file. Vui lòng kiểm tra định dạng."
 
-            # Lưu vào cơ sở dữ liệu
+            # --- BƯỚC 2: KIỂM TRA SỰ KHỚP LỆ CỦA HÌNH ẢNH ---
+            num_image_tags = sum(1 for q in parsed_questions if q.get('has_image'))
+            num_extracted_images = len(all_images_in_doc)
+
+            if num_image_tags != num_extracted_images:
+                error_msg = (
+                    f"Phát hiện không khớp: Tìm thấy {num_image_tags} câu hỏi có tag hình ảnh "
+                    f"nhưng chỉ trích xuất được {num_extracted_images} hình ảnh từ file.\n\n"
+                    "Nguyên nhân có thể là do bạn đã sao chép và dán cùng một hình ảnh nhiều lần. "
+                    "Để khắc phục, vui lòng xóa các hình ảnh và chèn lại từng hình ảnh một cách riêng biệt.\n\n"
+                    "Quá trình nhập đã bị hủy để đảm bảo tính toàn vẹn dữ liệu."
+                )
+                logging.error(error_msg)
+                return False, error_msg
+
+            # --- BƯỚC 3: LƯU CÂU HỎI VÀO CSDL ---
+            image_iterator = iter(all_images_in_doc)
             saved_count = 0
-            for q in questions:
-                if self._save_question_to_db(q, subject_id, creator_id):
+            for question in parsed_questions:
+                image_to_save = None
+                if question.get('has_image'):
+                    try:
+                        image_to_save = next(image_iterator)
+                    except StopIteration:
+                        # Trường hợp này không nên xảy ra do đã kiểm tra ở trên, nhưng vẫn là một biện pháp an toàn
+                        logging.error(
+                            f"Lỗi logic: Không còn hình ảnh trong iterator cho câu hỏi QN={question.get('question_number')}")
+                        continue
+
+                if self._save_question_to_db(question, subject_id, creator_id, image_to_save):
                     saved_count += 1
 
-            success_message = f"Đã đọc thành công {len(questions)} câu hỏi, lưu {saved_count} câu hỏi vào DB."
+            success_message = f"Đã đọc thành công {len(parsed_questions)} câu hỏi, lưu {saved_count} câu hỏi vào DB."
             return True, success_message
 
         except Exception as e:
             logging.error(f"Lỗi nghiêm trọng khi đọc file .docx: {e}", exc_info=True)
             return False, f"Lỗi đọc file: {str(e)}"
 
-    def _create_empty_question(self):
-        """Tạo một cấu trúc câu hỏi trống."""
-        return {
-            'question_text': '',
-            'options': {},
-            'correct_answer': None,
-            'difficulty': 'medium',
-            'mark': 1.0,
-            'unit': '',
-            'mix_choices': False,
-            'question_number': None,
-        }
-
-    # =================================================================
-    # CÁC HÀM HELPER ĐÃ ĐƯỢC CẬP NHẬT
-    # =================================================================
-    def _is_question_start(self, text):
-        """Kiểm tra label ở cột 1 có phải là bắt đầu câu hỏi không"""
-        return re.match(r'^QN\s*=\s*\d+', text, re.IGNORECASE)
-
-    def _extract_question_number(self, text):
-        """Trích xuất số câu hỏi từ label cột 1"""
-        match = re.search(r'(\d+)', text)
-        return int(match.group(1)) if match else None
-
-    def _is_option(self, text):
-        """Kiểm tra label ở cột 1 có phải là đáp án không"""
-        return re.match(r'^[a-d]\.', text, re.IGNORECASE)
-
-    def _is_correct_answer(self, text):
-        """Kiểm tra label ở cột 1 có phải là đáp án đúng không"""
-        return text.strip().upper().startswith('ANSWER')
-
-    def _is_mark_info(self, text):
-        """Kiểm tra label ở cột 1 có phải là thông tin điểm không"""
-        return text.strip().upper().startswith('MARK')
-
-    def _is_unit_info(self, text):
-        """Kiểm tra label ở cột 1 có phải là thông tin đơn vị không"""
-        return text.strip().upper().startswith('UNIT')
-
-    def _is_mix_choices_info(self, text):
-        """Kiểm tra label ở cột 1 có phải là thông tin trộn đáp án không"""
-        return text.strip().upper().startswith('MIX CHOICES')
-
-    def _extract_option(self, text):
-        # Hàm này không còn cần thiết trong logic đọc bảng
-        pass
-
-    def _extract_correct_answer(self, text):
-        # Không còn cần thiết, vì giá trị được lấy trực tiếp từ cột 2
-        pass
-
-    def _extract_mark(self, value_text):
-        """Trích xuất điểm số từ value ở cột 2"""
-        match = re.search(r'(\d+\.?\d*)', value_text)
+    def _save_question_to_db(self, question, subject_id, creator_id, image_data=None):
+        """
+        Lưu câu hỏi vào cơ sở dữ liệu.
+        Nếu có hình ảnh, lưu file ảnh vào thư mục 'pictures' với tên là ID của câu hỏi.
+        Không lưu đường dẫn ảnh vào DB.
+        """
         try:
-            return float(match.group(1)) if match else 1.0
-        except (ValueError, AttributeError):
-            return 1.0
-
-    def _extract_unit(self, text):
-        # Không còn cần thiết, giá trị được lấy trực tiếp
-        pass
-
-    def _extract_mix_choices(self, value_text):
-        """Trích xuất thông tin trộn đáp án từ value ở cột 2"""
-        return value_text.lower().strip() in ['yes', 'true', 'có']
-
-    def _is_valid_question(self, question):
-        """Kiểm tra câu hỏi có hợp lệ không"""
-        if not question:
-            return False
-        # Kiểm tra các điều kiện cơ bản
-        has_text = bool(question.get('question_text'))
-        has_enough_options = len(question.get('options', {})) >= 4
-        has_correct_answer_format = question.get('correct_answer') in ['A', 'B', 'C', 'D']
-        # Kiểm tra xem đáp án đúng có nằm trong các lựa chọn không
-        correct_answer_in_options = question.get('correct_answer') in question.get('options', {})
-
-        return has_text and has_enough_options and has_correct_answer_format and correct_answer_in_options
-
-    def _save_question_to_db(self, question, subject_id, creator_id):
-        """Lưu câu hỏi vào cơ sở dữ liệu"""
-        try:
-            # Logic lưu DB được giữ nguyên
+            # --- Bước 1: INSERT câu hỏi vào CSDL để lấy ID ---
             additional_info = []
             if question.get('unit'):
                 additional_info.append(f"Unit: {question['unit']}")
@@ -273,31 +154,124 @@ class DocxReader:
             if additional_info:
                 full_question_text += f"\n[{' | '.join(additional_info)}]"
 
-            query = """
-                    INSERT INTO questions (subject_id, question_text, option_a, option_b, option_c, option_d, \
-                                           correct_answer, difficulty_level, created_by)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) \
-                    """
-            params = (
-                subject_id,
-                full_question_text,
-                question['options'].get('A', ''),
-                question['options'].get('B', ''),
-                question['options'].get('C', ''),
-                question['options'].get('D', ''),
-                question['correct_answer'],
-                question['difficulty'],
-                creator_id
+            query_insert = """
+                           INSERT INTO questions (subject_id, question_text, option_a, option_b, option_c, option_d,
+                                                  correct_answer, difficulty_level, created_by)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) \
+                           """
+            params_insert = (
+                subject_id, full_question_text,
+                question['options'].get('A', ''), question['options'].get('B', ''),
+                question['options'].get('C', ''), question['options'].get('D', ''),
+                question['correct_answer'], question['difficulty'], creator_id
             )
-            self.db.execute_query(query, params)
+
+            # SỬA LỖI: Thay thế phương thức không tồn tại 'execute_insert_and_get_id'
+            # bằng một quy trình 2 bước.
+
+            # Bước 1.1: Thực thi câu lệnh INSERT. Giả định bạn có phương thức `execute_query`.
+            self.db.execute_query(query_insert, params_insert)
+
+            # Bước 1.2: Lấy ID của bản ghi vừa được chèn.
+            # YÊU CẦU QUAN TRỌNG: Lớp 'DatabaseManager' của bạn PHẢI có một phương thức
+            # để lấy ID của bản ghi vừa được chèn. Ví dụ: get_last_insert_id().
+            # Phương thức này sẽ chứa logic phù hợp với CSDL của bạn (ví dụ: return self.cursor.lastrowid).
+            new_question_id = self.db.get_last_insert_id()
+
+            if not new_question_id:
+                logging.error(
+                    f"Không thể lấy ID cho câu hỏi vừa tạo trong DB (QN={question.get('question_number')}). Đảm bảo get_last_insert_id() được triển khai trong DatabaseManager.")
+                return False
+
+            # --- Bước 2: Lưu hình ảnh vào thư mục nếu có ---
+            if image_data:
+                try:
+                    # Xác định đuôi file, mặc định là .png
+                    image_extension = os.path.splitext(image_data['name'])[1] if os.path.splitext(image_data['name'])[
+                        1] else '.png'
+                    image_filename = f"{new_question_id}{image_extension}"
+                    image_path = os.path.join(self.pictures_dir, image_filename)
+
+                    # Lưu file hình ảnh
+                    with open(image_path, 'wb') as f:
+                        f.write(image_data['data'])
+
+                    logging.info(f"Đã lưu hình ảnh '{image_path}' cho câu hỏi ID {new_question_id}.")
+
+                except Exception as img_e:
+                    logging.error(f"Lỗi khi lưu hình ảnh cho câu hỏi ID {new_question_id}: {img_e}")
+                    # Việc lưu câu hỏi đã thành công, chỉ có lưu ảnh bị lỗi, nên không trả về False
+
             return True
+
         except Exception as e:
-            logging.error(f"Lỗi lưu câu hỏi (QN={question.get('question_number')}) vào DB: {e}")
+            # Thêm kiểm tra AttributeError để đưa ra thông báo lỗi rõ ràng hơn
+            if isinstance(e, AttributeError) and 'get_last_insert_id' in str(e):
+                logging.error(
+                    f"LỖI CẤU HÌNH: Vui lòng triển khai phương thức 'get_last_insert_id' trong lớp DatabaseManager của bạn.")
+            else:
+                logging.error(f"Lỗi lưu câu hỏi (QN={question.get('question_number')}) vào DB: {e}")
             return False
+
+    def _create_empty_question(self):
+        """Tạo một cấu trúc câu hỏi trống."""
+        return {
+            'question_text': '',
+            'options': {},
+            'correct_answer': None,
+            'difficulty': 'medium',
+            'mark': 1.0,
+            'unit': '',
+            'mix_choices': False,
+            'has_image': False,
+            'question_number': None,
+        }
+
+    def _is_valid_question(self, question):
+        """Kiểm tra câu hỏi có hợp lệ không"""
+        if not question:
+            return False
+        has_text = bool(question.get('question_text'))
+        has_enough_options = len(question.get('options', {})) >= 4
+        has_correct_answer_format = question.get('correct_answer') in ['A', 'B', 'C', 'D']
+        correct_answer_in_options = question.get('correct_answer') in question.get('options', {})
+        return has_text and has_enough_options and has_correct_answer_format and correct_answer_in_options
+
+    # --- Các hàm helper để nhận dạng các dòng trong bảng ---
+    def _is_question_start(self, text):
+        return re.match(r'^QN\s*=\s*\d+', text, re.IGNORECASE)
+
+    def _extract_question_number(self, text):
+        match = re.search(r'(\d+)', text)
+        return int(match.group(1)) if match else None
+
+    def _is_option(self, text):
+        return re.match(r'^[a-f]\.', text, re.IGNORECASE)
+
+    def _is_correct_answer(self, text):
+        return text.strip().upper().startswith('ANSWER')
+
+    def _is_mark_info(self, text):
+        return text.strip().upper().startswith('MARK')
+
+    def _is_unit_info(self, text):
+        return text.strip().upper().startswith('UNIT')
+
+    def _is_mix_choices_info(self, text):
+        return text.strip().upper().startswith('MIX CHOICES')
+
+    def _extract_mark(self, value_text):
+        match = re.search(r'(\d+\.?\d*)', value_text)
+        try:
+            return float(match.group(1)) if match else 1.0
+        except (ValueError, AttributeError):
+            return 1.0
+
+    def _extract_mix_choices(self, value_text):
+        return value_text.lower().strip() in ['yes', 'true', 'có', '1']
 
     def get_template_instructions(self):
         """Trả về hướng dẫn định dạng template"""
-        # Cập nhật hướng dẫn cho định dạng bảng
         return """
 HƯỚNG DẪN ĐỊNH DẠNG FILE .DOCX (DẠNG BẢNG)
 
@@ -324,5 +298,10 @@ Cấu trúc một bảng câu hỏi mẫu:
 LƯU Ý:
 - Mỗi câu hỏi phải là một bảng riêng.
 - Các nhãn ở Cột 1 phải chính xác (ví dụ: 'QN=1', 'a.', 'ANSWER:').
-- Hình ảnh sẽ được tự động trích xuất và liên kết nếu có tham chiếu [file:...].
+- Để chèn hình ảnh, đặt placeholder `[file:tên_file_bất_kỳ.jpg]` vào nội dung câu hỏi.
+- Hình ảnh sẽ được tự động trích xuất và liên kết. Thứ tự hình ảnh trong file phải khớp với thứ tự câu hỏi có hình ảnh.
 """
+
+    def test_file_detailed(self, file_path):
+        """Test file chi tiết - hiển thị từng dòng và lý do không nhận diện"""
+        return False, "Chức năng test chi tiết chưa được cập nhật cho định dạng bảng."

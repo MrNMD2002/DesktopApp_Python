@@ -149,7 +149,7 @@ class ExamBankApp:
         version_frame = ModernStyles.create_modern_frame(button_frame)
         version_frame.pack()
         
-        version_label = ModernStyles.create_info_label(version_frame, "📋 Phiên bản 2.0")
+        version_label = ModernStyles.create_info_label(version_frame, "📋 Phiên bản 1.0")
         version_label.pack(side="left", padx=(0, 15))
         
         copyright_label = ModernStyles.create_info_label(version_frame, "© 2024 ExamBank System")

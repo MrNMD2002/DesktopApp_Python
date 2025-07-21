@@ -2,7 +2,7 @@
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'sa123',  # ⚠️ THAY ĐỔI MẬT KHẨU MYSQL THẬT CỦA BẠN
+    'password': '1801',  # ⚠️ THAY ĐỔI MẬT KHẨU MYSQL THẬT CỦA BẠN
     'database': 'exam_bank',
     'charset': 'utf8mb4',
     'autocommit': True

@@ -197,21 +197,21 @@ class QuestionCreatorWindow:
         
         if file_path:
             self.file_path_var.set(file_path)
-    
+
+    # Trong lớp QuestionCreatorWindow
     def read_file(self):
         """Đọc file .docx và import câu hỏi"""
         file_path = self.file_path_var.get().strip()
         subject_name = self.subject_var.get()
-        
+
         if not file_path or not subject_name:
             messagebox.showwarning("Cảnh báo", "Vui lòng chọn file và môn học!")
             return
-        
+
         subject_id = self.subject_dict.get(subject_name)
-        
+
         try:
-            # Đọc file .docx và import từng câu hỏi qua question_service.create_question
-            # Sử dụng hàm read_docx_file đúng signature
+            # Lời gọi này không thay đổi. Mọi logic phức tạp đã được chuyển vào DocxReader.
             success, message = self.docx_reader.read_docx_file(file_path, subject_id, self.current_user['id'])
             if success:
                 messagebox.showinfo("Thành công", message)
@@ -221,7 +221,7 @@ class QuestionCreatorWindow:
                 messagebox.showerror("Lỗi", message)
         except Exception as e:
             messagebox.showerror("Lỗi", f"Không thể import câu hỏi: {str(e)}")
-    
+
     def load_statistics(self):
         try:
             from services.api_client import clear_cache

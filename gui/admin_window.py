@@ -925,56 +925,57 @@ class UserManagementWindow:
 class SubjectManagementWindow:
     def __init__(self, parent):
         self.parent = parent
-        self.window = tk.Toplevel(parent.window if hasattr(parent, 'window') else parent)
+        # self.window = tk.Toplevel(parent.window if hasattr(parent, 'window') else parent)
+        self.window = tk.Toplevel(self.parent.window)
         self.window.title("Quản lý môn học")
-        self.window.geometry("800x600")
+        self.window.geometry("800x800")
         self.setup_ui()
         self.load_subjects()
-        
+
         # Thêm event handler để đảm bảo parent window được hiển thị khi đóng window này
         self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
-    
+
     def setup_ui(self):
         """Thiết lập giao diện quản lý môn học"""
         self.window.title("Quản lý môn học - Hệ thống Quản lý Đề thi")
         self.window.geometry("800x600")
-        
+
         # Frame chính
         main_frame = ttk.Frame(self.window, padding="10")
         main_frame.grid(row=0, column=0, sticky="nsew")
-        
+
         # Cấu hình grid
         self.window.columnconfigure(0, weight=1)
         self.window.rowconfigure(0, weight=1)
         main_frame.columnconfigure(1, weight=1)
         main_frame.rowconfigure(1, weight=1)
-        
+
         # Header
         header_frame = ttk.Frame(main_frame)
         header_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 10))
-        
+
         user_info = self.parent.current_user
-        ttk.Label(header_frame, text=f"📚 Quản lý môn học - Admin: {user_info['full_name']}", 
+        ttk.Label(header_frame, text=f"📚 Quản lý môn học - Admin: {user_info['full_name']}",
                  font=("Arial", 12, "bold")).pack(side=tk.LEFT)
-        
+
         # Nút quay lại và đăng xuất
         button_frame = ttk.Frame(header_frame)
         button_frame.pack(side=tk.RIGHT)
-        
-        ttk.Button(button_frame, text="⬅️ Quay lại", 
+
+        ttk.Button(button_frame, text="⬅️ Quay lại",
                   command=self.back_to_admin).pack(side=tk.LEFT, padx=(0, 10))
-        
-        ttk.Button(button_frame, text="Đăng xuất", 
+
+        ttk.Button(button_frame, text="Đăng xuất",
                   command=self.logout).pack(side=tk.RIGHT)
-        
+
         # Frame quản lý môn học
         subjects_frame = ttk.LabelFrame(main_frame, text="Danh sách môn học", padding="10")
         subjects_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", pady=(0, 10))
-        
+
         # Treeview cho danh sách môn học với cột thao tác
         columns = ("ID", "Tên môn học", "Mã môn học", "Mô tả", "Số câu hỏi", "Ngày tạo", "Thao tác")
         self.subjects_tree = ttk.Treeview(subjects_frame, columns=columns, show="headings", height=15)
-        
+
         # Cấu hình cột
         column_widths = {
             "ID": 60,
@@ -985,61 +986,61 @@ class SubjectManagementWindow:
             "Ngày tạo": 100,
             "Thao tác": 100
         }
-        
+
         for col in columns:
             self.subjects_tree.heading(col, text=col)
             self.subjects_tree.column(col, width=column_widths[col], minwidth=50)
-        
+
         # Đảm bảo cột "Thao tác" luôn hiển thị và có thể nhìn thấy
         self.subjects_tree.column("Thao tác", stretch=False, anchor="center")
-        
+
         self.subjects_tree.grid(row=0, column=0, sticky="nsew")
-        
+
         # Scrollbar
         scrollbar = ttk.Scrollbar(subjects_frame, orient="vertical", command=self.subjects_tree.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
         self.subjects_tree.configure(yscrollcommand=scrollbar.set)
-        
+
         # Frame nút chức năng đơn giản
         button_frame = ttk.Frame(subjects_frame)
         button_frame.grid(row=1, column=0, columnspan=2, pady=10)
-        
+
         # Nút thêm môn học mới
-        ttk.Button(button_frame, text="➕ Thêm môn học mới", 
-                  command=self.add_subject, 
+        ttk.Button(button_frame, text="➕ Thêm môn học mới",
+                  command=self.add_subject,
                   style='AdminButton.TButton').pack(side=tk.LEFT, padx=(0, 10))
-        
+
         # Nút sửa môn học
-        ttk.Button(button_frame, text="✏️ Sửa môn học", 
-                  command=self.edit_subject, 
+        ttk.Button(button_frame, text="✏️ Sửa môn học",
+                  command=self.edit_subject,
                   style='AdminButton.TButton').pack(side=tk.LEFT, padx=(0, 10))
-        
+
         # Cấu hình grid
         subjects_frame.columnconfigure(0, weight=1)
         subjects_frame.rowconfigure(0, weight=1)
-        
+
         # Bind events
         self.subjects_tree.bind("<Double-1>", lambda e: self.edit_subject())
         self.subjects_tree.bind("<Button-1>", self.on_tree_click)
-    
+
     # Không cần hàm manage_subjects và execute_and_close nữa
-    
+
     def load_subjects(self):
         """Tải danh sách môn học"""
         try:
             from services import subject_service, question_service
             from services.api_client import clear_cache
-            
+
             # Xóa cache trước khi tải dữ liệu mới
             clear_cache()
-            
+
             # Xóa dữ liệu cũ trước
             for item in self.subjects_tree.get_children():
                 self.subjects_tree.delete(item)
-            
+
             # Tải dữ liệu mới
             subjects = subject_service.get_subjects()
-            
+
             # Thêm dữ liệu mới
             for subject in subjects:
                 try:
@@ -1048,7 +1049,7 @@ class SubjectManagementWindow:
                     question_count = len(questions)
                 except:
                     question_count = 0
-                
+
                 created_at = subject.get('created_at', 'N/A')
                 if isinstance(created_at, str) and created_at != 'N/A':
                     try:
@@ -1058,7 +1059,7 @@ class SubjectManagementWindow:
                         created_date = created_at
                 else:
                     created_date = 'N/A'
-                
+
                 self.subjects_tree.insert("", "end", values=(
                     subject['id'],
                     subject['name'],
@@ -1068,14 +1069,14 @@ class SubjectManagementWindow:
                     created_date,
                     "🗑️ Xóa"  # Nút xóa trong cột thao tác
                 ), tags=(subject['id'],))
-            
+
             # Cập nhật UI ngay lập tức
             self.subjects_tree.update()
             self.window.update_idletasks()  # Đảm bảo UI được cập nhật
-                
+
         except Exception as e:
             messagebox.showerror("Lỗi", f"Không thể tải danh sách môn học: {str(e)}")
-    
+
     def on_tree_click(self, event):
         """Xử lý click vào treeview"""
         region = self.subjects_tree.identify("region", event.x, event.y)
@@ -1086,16 +1087,16 @@ class SubjectManagementWindow:
                 if item:
                     subject_id = self.subjects_tree.item(item, "tags")[0]
                     self.delete_subject_by_id(subject_id)
-    
+
     def delete_subject_by_id(self, subject_id):
         """Xóa môn học theo ID (từ click vào cột thao tác)"""
         try:
             from services import subject_service
             from services.api_client import clear_cache
-            
+
             # Xóa cache trước khi kiểm tra
             clear_cache()
-            
+
             # Kiểm tra môn học có tồn tại không
             try:
                 subject = subject_service.get_subject(subject_id)
@@ -1103,13 +1104,13 @@ class SubjectManagementWindow:
                 messagebox.showerror("❌ Lỗi", f"Môn học không tồn tại hoặc đã bị xóa!")
                 self.load_subjects()  # Làm mới danh sách
                 return
-            
+
             # Lấy thông tin chi tiết từ subject
             subject_name = subject.get('name', 'N/A')
             subject_code = subject.get('code', 'N/A')
-            
+
             result = messagebox.askyesno(
-                "🗑️ Xác nhận xóa môn học", 
+                "🗑️ Xác nhận xóa môn học",
                 f"Bạn có chắc chắn muốn xóa môn học này?\n\n"
                 f"📝 Thông tin môn học:\n"
                 f"• ID: {subject_id}\n"
@@ -1118,14 +1119,14 @@ class SubjectManagementWindow:
                 f"⚠️ Cảnh báo: Việc xóa môn học sẽ xóa tất cả câu hỏi và đề thi liên quan!\n\n"
                 f"⚠️ Lưu ý: Hành động này không thể hoàn tác!"
             )
-            
+
             if result:
                 try:
                     # Xóa cache trước khi xóa
                     clear_cache()
                     subject_service.delete_subject(subject_id)
                     messagebox.showinfo("✅ Thành công", f"Đã xóa môn học {subject_name} thành công!")
-                    
+
                     # Làm mới danh sách ngay lập tức
                     self.load_subjects()
                 except Exception as e:
@@ -1136,14 +1137,14 @@ class SubjectManagementWindow:
             messagebox.showerror("❌ Lỗi", f"Không thể xóa môn học: {str(e)}")
             # Làm mới danh sách
             self.load_subjects()
-    
+
     def get_selected_subject_id(self):
         """Lấy ID của môn học được chọn"""
         selection = self.subjects_tree.selection()
         if not selection:
             return None
         return self.subjects_tree.item(selection[0], "tags")[0]
-    
+
     def add_subject(self):
         """Thêm môn học mới"""
         dialog = tk.Toplevel(self.window)
@@ -1151,23 +1152,23 @@ class SubjectManagementWindow:
         dialog.geometry("400x350")
         dialog.transient(self.window)
         dialog.grab_set()
-        
+
         frame = ttk.Frame(dialog, padding="20")
         frame.pack(fill="both", expand=True)
-        
+
         # Form fields
         ttk.Label(frame, text="Tên môn học:", font=("Arial", 10, "bold")).pack(anchor="w")
         name_var = tk.StringVar()
         ttk.Entry(frame, textvariable=name_var, width=40, font=("Arial", 10)).pack(pady=(5, 15), fill="x")
-        
+
         ttk.Label(frame, text="Mã môn học:", font=("Arial", 10, "bold")).pack(anchor="w")
         code_var = tk.StringVar()
         ttk.Entry(frame, textvariable=code_var, width=40, font=("Arial", 10)).pack(pady=(5, 15), fill="x")
-        
+
         ttk.Label(frame, text="Mô tả:", font=("Arial", 10, "bold")).pack(anchor="w")
         desc_var = tk.StringVar()
         ttk.Entry(frame, textvariable=desc_var, width=40, font=("Arial", 10)).pack(pady=(5, 15), fill="x")
-        
+
         def validate_form():
             name = name_var.get().strip()
             code = code_var.get().strip()
@@ -1178,26 +1179,26 @@ class SubjectManagementWindow:
                 messagebox.showwarning("Cảnh báo", "⚠️ Vui lòng nhập mã môn học!")
                 return False
             return True
-        
+
         def save():
             if not validate_form():
                 return
-            
+
             name = name_var.get().strip()
             code = code_var.get().strip()
             description = desc_var.get().strip()
-            
+
             # Xác nhận cuối cùng
-            result = messagebox.askyesno("Xác nhận", 
+            result = messagebox.askyesno("Xác nhận",
                                        f"Bạn có chắc chắn muốn thêm môn học mới?\n\n"
                                        f"📋 Thông tin môn học:\n"
                                        f"• Tên môn học: {name}\n"
                                        f"• Mã môn học: {code}\n"
                                        f"• Mô tả: {description}")
-            
+
             if not result:
                 return
-            
+
             try:
                 from services import subject_service
                 subject_service.create_subject({
@@ -1208,67 +1209,67 @@ class SubjectManagementWindow:
                 # Xóa cache và làm mới danh sách ngay lập tức
                 from services.api_client import clear_cache
                 clear_cache()
-                
-                messagebox.showinfo("✅ Thành công", 
+
+                messagebox.showinfo("✅ Thành công",
                                   f"Đã thêm môn học thành công!\n\n"
                                   f"📋 Thông tin môn học:\n"
                                   f"• Tên môn học: {name}\n"
                                   f"• Mã môn học: {code}\n"
                                   f"• Mô tả: {description}")
                 dialog.destroy()
-                
+
                 # Làm mới danh sách ngay lập tức
                 self.load_subjects()
             except Exception as e:
                 messagebox.showerror("❌ Lỗi", f"Không thể thêm môn học:\n{str(e)}")
-        
+
         def cancel():
             dialog.destroy()
-        
+
         # Buttons
         button_frame = ttk.Frame(frame)
         button_frame.pack(fill="x", pady=(20, 0))
-        
+
         ttk.Button(button_frame, text="❌ Hủy", command=cancel, width=15).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(button_frame, text="✅ Thêm môn học", command=save, 
+        ttk.Button(button_frame, text="✅ Thêm môn học", command=save,
                   style='Accent.TButton', width=20).pack(side=tk.RIGHT)
-    
+
     def edit_subject(self):
         """Sửa thông tin môn học"""
         subject_id = self.get_selected_subject_id()
         if not subject_id:
             messagebox.showwarning("Cảnh báo", "Vui lòng chọn môn học để sửa!")
             return
-        
+
         try:
             from services import subject_service
             subject = subject_service.get_subject(subject_id)
         except Exception as e:
             messagebox.showerror("Lỗi", f"Không thể lấy thông tin môn học: {str(e)}")
             return
-        
+
         dialog = tk.Toplevel(self.window)
         dialog.title("Sửa thông tin môn học")
         dialog.geometry("400x350")
         dialog.transient(self.window)
         dialog.grab_set()
-        
+
         frame = ttk.Frame(dialog, padding="20")
         frame.pack(fill="both", expand=True)
-        
+
         # Form fields
         ttk.Label(frame, text="Tên môn học:", font=("Arial", 10, "bold")).pack(anchor="w")
         name_var = tk.StringVar(value=subject['name'])
         ttk.Entry(frame, textvariable=name_var, width=40, font=("Arial", 10)).pack(pady=(5, 15), fill="x")
-        
+
         ttk.Label(frame, text="Mã môn học:", font=("Arial", 10, "bold")).pack(anchor="w")
         code_var = tk.StringVar(value=subject.get('code', ''))
         ttk.Entry(frame, textvariable=code_var, width=40, font=("Arial", 10)).pack(pady=(5, 15), fill="x")
-        
+
         ttk.Label(frame, text="Mô tả:", font=("Arial", 10, "bold")).pack(anchor="w")
         desc_var = tk.StringVar(value=subject.get('description', ''))
         ttk.Entry(frame, textvariable=desc_var, width=40, font=("Arial", 10)).pack(pady=(5, 15), fill="x")
-        
+
         def validate_form():
             name = name_var.get().strip()
             code = code_var.get().strip()
@@ -1279,26 +1280,26 @@ class SubjectManagementWindow:
                 messagebox.showwarning("Cảnh báo", "⚠️ Vui lòng nhập mã môn học!")
                 return False
             return True
-        
+
         def save():
             if not validate_form():
                 return
-            
+
             name = name_var.get().strip()
             code = code_var.get().strip()
             description = desc_var.get().strip()
-            
+
             # Xác nhận cuối cùng
-            result = messagebox.askyesno("Xác nhận", 
+            result = messagebox.askyesno("Xác nhận",
                                        f"Bạn có chắc chắn muốn cập nhật thông tin môn học?\n\n"
                                        f"📋 Thông tin mới:\n"
                                        f"• Tên môn học: {name}\n"
                                        f"• Mã môn học: {code}\n"
                                        f"• Mô tả: {description}")
-            
+
             if not result:
                 return
-            
+
             try:
                 from services import subject_service
                 subject_service.update_subject(subject_id, {
@@ -1309,40 +1310,40 @@ class SubjectManagementWindow:
                 # Xóa cache và làm mới danh sách ngay lập tức
                 from services.api_client import clear_cache
                 clear_cache()
-                
-                messagebox.showinfo("✅ Thành công", 
+
+                messagebox.showinfo("✅ Thành công",
                                   f"Đã cập nhật thông tin môn học thành công!\n\n"
                                   f"📋 Thông tin mới:\n"
                                        f"• Tên môn học: {name}\n"
                                        f"• Mã môn học: {code}\n"
                                        f"• Mô tả: {description}")
                 dialog.destroy()
-                
+
                 # Làm mới danh sách ngay lập tức
                 self.load_subjects()
             except Exception as e:
                 messagebox.showerror("❌ Lỗi", f"Không thể cập nhật môn học:\n{str(e)}")
-        
+
         def cancel():
             dialog.destroy()
-        
+
         # Buttons
         button_frame = ttk.Frame(frame)
         button_frame.pack(fill="x", pady=(20, 0))
-        
-        ttk.Button(button_frame, text="❌ Hủy", command=cancel, width=15).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(button_frame, text="✅ Cập nhật", command=save, 
-                  style='Accent.TButton', width=20).pack(side=tk.RIGHT)
-    
 
-    
+        ttk.Button(button_frame, text="❌ Hủy", command=cancel, width=15).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(button_frame, text="✅ Cập nhật", command=save,
+                  style='Accent.TButton', width=20).pack(side=tk.RIGHT)
+
+
+
     def back_to_admin(self):
         """Quay lại màn hình Admin chính"""
         # Hiển thị lại cửa sổ admin và đóng cửa sổ hiện tại
         if hasattr(self.parent, 'window'):
             self.parent.window.deiconify()  # Hiển thị lại cửa sổ admin
         self.window.destroy()
-    
+
     def logout(self):
         """Đăng xuất và quay về cửa sổ đăng nhập"""
         self.window.destroy()
@@ -1359,7 +1360,7 @@ class SubjectManagementWindow:
                     current_parent.show_login_after_logout()
                     break
         messagebox.showinfo("Thông báo", "Đã đăng xuất thành công!")
-    
+
     def on_closing(self):
         """Xử lý khi đóng window"""
         self.back_to_admin()
