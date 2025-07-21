@@ -36,6 +36,7 @@ class Question(BaseModel):
     option_d: str
     correct_answer: str
     difficulty_level: str
+    points: Optional[float] = 1.0
     created_by: int
     created_at: datetime.datetime
 
@@ -48,6 +49,7 @@ class QuestionCreate(BaseModel):
     option_d: str
     correct_answer: str
     difficulty_level: Optional[str] = 'medium'
+    points: Optional[float] = 1.0
     created_by: int
 
 class Exam(BaseModel):

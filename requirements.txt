@@ -3,6 +3,9 @@ bcrypt==4.0.1
 python-docx==0.8.11
 Pillow>=10.4.0
 requests
-uvicorn
+uvicorn[standard]
 fastapi
 python-dotenv
+psutil
+uvloop
+httptools

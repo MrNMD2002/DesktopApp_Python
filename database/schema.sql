@@ -31,6 +31,7 @@ CREATE TABLE questions (
     option_d TEXT NOT NULL,
     correct_answer CHAR(1) NOT NULL,
     difficulty_level ENUM('easy', 'medium', 'hard') DEFAULT 'medium',
+    points DECIMAL(3,1) DEFAULT 1.0,
     created_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (subject_id) REFERENCES subjects(id),

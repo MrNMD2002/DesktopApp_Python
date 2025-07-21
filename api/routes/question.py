@@ -35,8 +35,8 @@ def create_question(question: QuestionCreate):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
-        "INSERT INTO questions (subject_id, question_text, option_a, option_b, option_c, option_d, correct_answer, difficulty_level, created_by) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-        (question.subject_id, question.question_text, question.option_a, question.option_b, question.option_c, question.option_d, question.correct_answer, question.difficulty_level, question.created_by)
+        "INSERT INTO questions (subject_id, question_text, option_a, option_b, option_c, option_d, correct_answer, difficulty_level, points, created_by) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        (question.subject_id, question.question_text, question.option_a, question.option_b, question.option_c, question.option_d, question.correct_answer, question.difficulty_level, question.points, question.created_by)
     )
     conn.commit()
     question_id = cursor.lastrowid
@@ -70,7 +70,8 @@ def update_question(question_id: int, data: dict = Body(...)):
             option_c = %s,
             option_d = %s,
             correct_answer = %s,
-            difficulty_level = %s
+            difficulty_level = %s,
+            points = %s
         WHERE id = %s
     """, (
         data.get("question_text"),
@@ -80,6 +81,7 @@ def update_question(question_id: int, data: dict = Body(...)):
         data.get("option_d"),
         data.get("correct_answer"),
         data.get("difficulty_level"),
+        data.get("points", 1.0),
         question_id
     ))
     conn.commit()

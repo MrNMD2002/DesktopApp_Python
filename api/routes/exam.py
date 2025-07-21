@@ -57,8 +57,22 @@ def create_exam(exam: ExamCreate):
 def delete_exam(exam_id: int):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM exams WHERE id = %s", (exam_id,))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"message": "Deleted"} 
+    try:
+        # Xóa các bản ghi liên quan trong exam_questions trước
+        cursor.execute("DELETE FROM exam_questions WHERE exam_id = %s", (exam_id,))
+        
+        # Xóa các bản ghi liên quan trong student_exams
+        cursor.execute("DELETE FROM student_exams WHERE exam_id = %s", (exam_id,))
+        
+        # Cuối cùng xóa đề thi
+        cursor.execute("DELETE FROM exams WHERE id = %s", (exam_id,))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return {"message": "Deleted"}
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        conn.close()
+        raise HTTPException(status_code=500, detail=f"Error deleting exam: {str(e)}") 

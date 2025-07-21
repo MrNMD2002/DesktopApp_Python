@@ -2,14 +2,19 @@ from services.api_client import get, post, delete, put
 import random
 
 def get_questions(subject_id=None):
+    """Lấy danh sách câu hỏi với cache"""
     if subject_id:
-        return get(f"/questions/?subject_id={subject_id}")
-    return get("/questions/")
+        return get(f"/questions/?subject_id={subject_id}", use_cache=True)
+    return get("/questions/", use_cache=True)
+
+def get_question_by_id(question_id):
+    """Lấy thông tin câu hỏi theo ID với cache"""
+    return get(f"/questions/{question_id}", use_cache=True)
 
 def get_question(question_id):
     return get(f"/questions/{question_id}")
 
-def create_question(subject_id, question_text, option_a, option_b, option_c, option_d, correct_answer, created_by, difficulty_level='medium'):
+def create_question(subject_id, question_text, option_a, option_b, option_c, option_d, correct_answer, created_by, difficulty_level='medium', points=1.0):
     return post("/questions/", json={
         "subject_id": subject_id,
         "question_text": question_text,
@@ -19,6 +24,7 @@ def create_question(subject_id, question_text, option_a, option_b, option_c, opt
         "option_d": option_d,
         "correct_answer": correct_answer,
         "difficulty_level": difficulty_level,
+        "points": points,
         "created_by": created_by
     })
 

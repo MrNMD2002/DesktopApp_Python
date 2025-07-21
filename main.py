@@ -2,7 +2,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import logging
 from gui.login_window import LoginWindow
+from gui.styles import ModernStyles
 import bcrypt
+from services.api_client import clear_cache
 
 # Cấu hình logging
 logging.basicConfig(
@@ -23,23 +25,17 @@ class ExamBankApp:
     
     def setup_main_window(self):
         """Thiết lập cửa sổ chính"""
-        self.root.title("Hệ thống Quản lý Ngân hàng Đề thi Trắc nghiệm")
-        self.root.geometry("800x600")  # Tăng kích thước mặc định
+        self.root.title("🎓 Hệ thống Quản lý Ngân hàng Đề thi Trắc nghiệm")
+        self.root.geometry("1000x700")  # Tăng kích thước mặc định
         self.root.resizable(True, True)  # Cho phép resize cả chiều rộng và chiều cao
-        self.root.minsize(600, 400)  # Kích thước tối thiểu
+        self.root.minsize(800, 600)  # Kích thước tối thiểu
+        
+        # Apply modern styling
+        ModernStyles.apply_modern_style()
+        self.root.configure(bg=ModernStyles.COLORS['light'])
         
         # Căn giữa cửa sổ
         self.center_window()
-        
-        # Style
-        style = ttk.Style()
-        style.theme_use('clam')
-        
-        # Tùy chỉnh style cho nút
-        style.configure('Accent.TButton', 
-                       background='#0078d4', 
-                       foreground='white',
-                       font=('Arial', 10, 'bold'))
     
     def center_window(self):
         """Căn giữa cửa sổ trên màn hình"""
@@ -52,67 +48,112 @@ class ExamBankApp:
     
     def show_welcome_screen(self):
         """Hiển thị màn hình chào mừng"""
-        # Frame chính
-        main_frame = ttk.Frame(self.root, padding="40")
-        main_frame.grid(row=0, column=0, sticky="nsew")
+        # Main container
+        main_frame = ModernStyles.create_modern_frame(self.root)
+        main_frame.pack(fill="both", expand=True, padx=60, pady=60)
 
-        # Cấu hình grid
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
-        main_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(1, weight=1)  # Cho phép mô tả mở rộng
-
-        # Logo/Tiêu đề
-        title_label = ttk.Label(main_frame,
-                               text="HỆ THỐNG QUẢN LÝ\nNGÂN HÀNG ĐỀ THI TRẮC NGHIỆM",
-                               font=("Arial", 20, "bold"),
-                               justify="center")
-        title_label.grid(row=0, column=0, pady=(0, 30))
+        # Header section
+        header_frame = ModernStyles.create_modern_frame(main_frame)
+        header_frame.pack(fill="x", pady=(0, 50))
         
-        # Mô tả hệ thống
-        description = """
-        Hệ thống hỗ trợ quản lý ngân hàng đề thi trắc nghiệm với các chức năng:
+        # Main title
+        title_label = ModernStyles.create_title_label(header_frame,
+                                                     "🎓 HỆ THỐNG QUẢN LÝ\n📚 NGÂN HÀNG ĐỀ THI TRẮC NGHIỆM")
+        title_label.pack()
         
-        • Người làm đề: Upload file .docx chứa câu hỏi
-        • Người sinh đề: Tạo đề thi từ ngân hàng câu hỏi
-        • Học sinh: Làm bài thi trực tuyến
+        # Subtitle
+        subtitle_label = ModernStyles.create_subtitle_label(header_frame,
+                                                           "Giải pháp toàn diện cho việc quản lý và tổ chức thi trắc nghiệm")
+        subtitle_label.pack(pady=(10, 0))
         
-        Vui lòng đăng nhập để sử dụng hệ thống.
-        """
+        # Content section with 2 columns
+        content_frame = ModernStyles.create_modern_frame(main_frame)
+        content_frame.pack(fill="both", expand=True, pady=(30, 0))
         
-        desc_label = ttk.Label(main_frame, text=description,
-                              font=("Arial", 12), justify="left")
-        desc_label.grid(row=1, column=0, pady=(0, 30), sticky="nsew")
+        # Left column - Features description
+        left_frame = ModernStyles.create_modern_frame(content_frame)
+        left_frame.pack(side="left", fill="both", expand=True, padx=(0, 30))
         
-        # Frame cho nút và thông tin
-        bottom_frame = ttk.Frame(main_frame)
-        bottom_frame.grid(row=2, column=0, sticky="ew")
-        bottom_frame.columnconfigure(0, weight=1)
+        # Features title
+        desc_title = ModernStyles.create_subtitle_label(left_frame, "🚀 Tính năng chính")
+        desc_title.pack(anchor="w", pady=(0, 20))
         
-        # Nút đăng nhập
-        login_button = ttk.Button(bottom_frame, text="ĐĂNG NHẬP", 
-                                 command=self.show_login, style="Accent.TButton")
-        login_button.grid(row=0, column=0, pady=(0, 20))
+        # System features with icons
+        features = [
+            ("👨‍💼 Admin", "Quản lý người dùng, đề thi, toàn bộ hệ thống"),
+            ("📝 Question Creator", "Upload file .docx chứa câu hỏi"),
+            ("📊 Exam Generator", "Tạo đề thi từ ngân hàng câu hỏi"),
+            ("👨‍🎓 Student", "Làm bài thi trực tuyến"),
+            ("📈 Analytics", "Thống kê và báo cáo chi tiết"),
+            ("🔒 Security", "Bảo mật thông tin và phân quyền")
+        ]
         
-        # Thông tin phiên bản
-        version_label = ttk.Label(bottom_frame, text="Phiên bản 1.0", 
-                                 font=("Arial", 8), foreground="gray")
-        version_label.grid(row=1, column=0)
+        for icon_text, description in features:
+            feature_frame = ModernStyles.create_modern_frame(left_frame)
+            feature_frame.pack(fill="x", pady=8)
+            
+            icon_label = tk.Label(feature_frame, text=icon_text, 
+                                 font=("Segoe UI", 12, "bold"), 
+                                 fg=ModernStyles.COLORS['primary'],
+                                 bg=ModernStyles.COLORS['light'])
+            icon_label.pack(anchor="w")
+            
+            desc_label = ModernStyles.create_info_label(feature_frame, f"   {description}")
+            desc_label.pack(anchor="w")
         
-        # Thông tin tài khoản mẫu
-        info_frame = ttk.LabelFrame(bottom_frame, text="Tài khoản mẫu", padding="15")
-        info_frame.grid(row=2, column=0, pady=(20, 0), sticky="ew")
+        # Right column - Login information
+        right_frame = ModernStyles.create_modern_frame(content_frame)
+        right_frame.pack(side="right", fill="both", expand=True)
         
-        info_text = """
-        Tài khoản mẫu (mật khẩu: 123456):
-        • student1 - Học sinh
-        • creator1 - Người làm đề  
-        • admin - Người sinh đề
-        """
+        # Sample accounts frame
+        info_frame = ModernStyles.create_modern_frame(right_frame)
+        info_frame.pack(fill="x", pady=(0, 25))
         
-        info_label = ttk.Label(info_frame, text=info_text, 
-                              font=("Arial", 10), justify="left")
-        info_label.grid(row=0, column=0)
+        info_title = ModernStyles.create_subtitle_label(info_frame, "🔑 Tài khoản mẫu")
+        info_title.pack(anchor="w", pady=(0, 15))
+        
+        password_info = ModernStyles.create_info_label(info_frame, "Mật khẩu: 123456")
+        password_info.pack(anchor="w", pady=(0, 15))
+        
+        accounts = [
+            ("👨‍💼 admin", "Quản trị viên (Admin)"),
+            ("📝 creator1", "Người làm đề (Question Creator)"),
+            ("📊 generator1", "Người sinh đề (Exam Generator)"),
+            ("👨‍🎓 student1", "Học sinh (Student)")
+        ]
+        
+        for username, role in accounts:
+            account_frame = ModernStyles.create_modern_frame(info_frame)
+            account_frame.pack(fill="x", pady=5)
+            
+            user_label = tk.Label(account_frame, text=username, 
+                                 font=("Segoe UI", 11, "bold"), 
+                                 fg=ModernStyles.COLORS['dark'],
+                                 bg=ModernStyles.COLORS['light'])
+            user_label.pack(anchor="w")
+            
+            role_label = ModernStyles.create_info_label(account_frame, f"   {role}")
+            role_label.pack(anchor="w")
+        
+        # Login button frame
+        button_frame = ModernStyles.create_modern_frame(right_frame)
+        button_frame.pack(fill="x")
+        
+        # Login button with modern styling
+        login_button = ModernStyles.create_success_button(button_frame, 
+                                                         "🔐 ĐĂNG NHẬP", 
+                                                         self.show_login)
+        login_button.pack(pady=(0, 20))
+        
+        # Version information
+        version_frame = ModernStyles.create_modern_frame(button_frame)
+        version_frame.pack()
+        
+        version_label = ModernStyles.create_info_label(version_frame, "📋 Phiên bản 2.0")
+        version_label.pack(side="left", padx=(0, 15))
+        
+        copyright_label = ModernStyles.create_info_label(version_frame, "© 2024 ExamBank System")
+        copyright_label.pack(side="left")
     
     def show_login(self):
         """Hiển thị cửa sổ đăng nhập"""
@@ -123,17 +164,37 @@ class ExamBankApp:
         from gui.question_creator_window import QuestionCreatorWindow
         from gui.exam_generator_window import ExamGeneratorWindow
         from gui.admin_window import AdminWindow
+        
         role = self.current_user['role']
-        # Đảm bảo chỉ mở đúng homepage admin khi là admin
+        
+        # Ẩn cửa sổ chính (welcome screen)
+        self.root.withdraw()
+        
+        # Debug: In ra role để kiểm tra
+        print(f"User role: {role}")
+        print(f"User data: {self.current_user}")
+        
+        # Mở cửa sổ tương ứng với role
         if role == "admin":
+            # Admin có quyền quản lý toàn bộ hệ thống
             AdminWindow(self, None)
         elif role == "student":
+            # Student chỉ có thể làm bài thi
             StudentWindow(self, None)
         elif role == "question_creator":
+            # Question Creator chỉ có thể upload câu hỏi
             QuestionCreatorWindow(self, None)
         elif role == "exam_generator":
-            AdminWindow(self, None)
-            # ExamGeneratorWindow(self, None)
+            # Exam Generator chỉ có thể tạo đề thi
+            ExamGeneratorWindow(self, None)
+        else:
+            messagebox.showerror("Lỗi", f"Role không hợp lệ: {role}")
+    
+    def show_login_after_logout(self):
+        """Hiển thị lại cửa sổ đăng nhập sau khi đăng xuất"""
+        self.current_user = None
+        self.root.deiconify()  # Hiển thị lại cửa sổ chính
+        self.show_welcome_screen()  # Hiển thị lại welcome screen
 
     def run(self):
         """Chạy ứng dụng"""
