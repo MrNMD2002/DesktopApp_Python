@@ -413,12 +413,10 @@ class ExamGeneratorWindow:
         # Hiển thị câu hỏi
         text_widget.config(state="normal")
         for i, question in enumerate(questions, 1):
-            # --- LOGIC HIỂN THỊ HÌNH ẢNH ---
             question_id = question.get('id')
             image_path = None
 
             if question_id:
-                # Tìm file ảnh với các extension phổ biến
                 possible_extensions = ['.png', '.jpg', '.jpeg', '.gif']
                 for ext in possible_extensions:
                     path_to_check = os.path.join('pictures', f"{question_id}{ext}")
@@ -426,11 +424,10 @@ class ExamGeneratorWindow:
                         image_path = path_to_check
                         break
 
+            # Image
             if image_path:
                 try:
-                    # Mở và resize ảnh
                     img = Image.open(image_path)
-                    # Resize ảnh để có chiều rộng tối đa là 400px, giữ nguyên tỉ lệ
                     max_width = 400
                     if img.width > max_width:
                         ratio = max_width / img.width
@@ -440,13 +437,10 @@ class ExamGeneratorWindow:
                     photo_image = ImageTk.PhotoImage(img)
                     self.image_references.append(photo_image)  # Lưu tham chiếu
 
-                    # Chèn ảnh vào Text widget
                     text_widget.image_create(tk.END, image=photo_image)
-                    text_widget.insert(tk.END, '\n')  # Thêm dòng mới sau ảnh
+                    text_widget.insert(tk.END, '\n')
                 except Exception as e:
                     print(f"Lỗi khi xử lý ảnh {image_path}: {e}")
-
-            # --- KẾT THÚC LOGIC HIỂN THỊ HÌNH ẢNH ---
 
             text_widget.insert(tk.END, f"Câu {i}: {question['question_text']}\n")
             text_widget.insert(tk.END, f"A. {question['option_a']}\n")
